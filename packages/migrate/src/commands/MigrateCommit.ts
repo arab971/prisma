@@ -21,7 +21,7 @@ import {
 import { bold, dim, green, italic, red } from 'kleur/colors'
 
 import { Migrate } from '../Migrate'
-import type { EngineResults } from '../types'
+import { EngineResults } from '../types'
 import { ensureCanConnectToDatabase, parseDatasourceInfo } from '../utils/ensureDatabaseExists'
 import { printDatasource } from '../utils/printDatasource'
 import { createMigration, writeMigrationLockfile, writeMigrationScript } from '../utils/createMigration'
@@ -147,6 +147,7 @@ ${bold('Examples')}
 
       if (getMigrationNameResult.userCancelled) {
         process.stdout.write(getMigrationNameResult.userCancelled + '\n')
+        await migrate.stop()
         process.exit(130)
       }
 
