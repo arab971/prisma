@@ -17,6 +17,7 @@ import { DbPush } from './commands/DbPush'
 // import { DbDrop } from './commands/DbDrop'
 import { DbSeed } from './commands/DbSeed'
 import { MigrateCommand } from './commands/MigrateCommand'
+import { MigrateCommit } from './commands/MigrateCommit'
 import { MigrateDeploy } from './commands/MigrateDeploy'
 import { MigrateDev } from './commands/MigrateDev'
 import { MigrateDiff } from './commands/MigrateDiff'
@@ -58,6 +59,7 @@ async function main(): Promise<number> {
       status: MigrateStatus.new(),
       resolve: MigrateResolve.new(),
       reset: MigrateReset.new(),
+      commit: MigrateCommit.new(),
       deploy: MigrateDeploy.new(),
       diff: MigrateDiff.new(),
     }),

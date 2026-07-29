@@ -181,3 +181,10 @@ You may only need to build and update one of these modules if your changes are i
 2. Build only `query-compiler-wasm` if your changes are related to query planning and execution but do not touch the schema or DMMF in any way.
 
 When in doubt, build both to avoid unexpected behavior. Time and cost of compilation is always less than of debugging.
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.

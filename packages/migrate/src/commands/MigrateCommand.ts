@@ -29,6 +29,7 @@ ${bold('Commands for production/staging')}
 
 ${bold('Command for any stage')}
 
+       commit   Commit changes made with prisma db push to a new migration
         diff   Compare the database schema from two arbitrary sources
 
 ${bold('Options')}
