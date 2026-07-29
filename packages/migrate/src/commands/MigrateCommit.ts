@@ -174,17 +174,16 @@ ${bold('Examples')}
       const captureStdout = new CaptureStdout()
       captureStdout.startCapture()
 
+      let diffResult: EngineResults.MigrateDiffOutput
       try {
-        await migrate.engine.migrateDiff({
-          from: hasExistingMigrations
-            ? { tag: 'migrations', ...migrationsList }
-            : { tag: 'empty' },
+        diffResult = await migrate.engine.migrateDiff({
+          from: hasExistingMigrations ? { tag: 'migrations', ...migrationsList } : { tag: 'empty' },
           to: {
             tag: 'schemaDatasource',
             ...toSchemasWithConfigDir(schemaContext, baseDir),
           },
           script: true,
-          exitCode: null,
+          exitCode: true,
           filters: {
             externalTables: config.tables?.external ?? [],
             externalEnums: config.enums?.external ?? [],
@@ -197,7 +196,7 @@ ${bold('Examples')}
       const capturedSql = captureStdout.getCapturedText().join('\n')
       captureStdout.clearCaptureText()
 
-      if (!capturedSql.trim()) {
+      if (diffResult.exitCode === EngineResults.MigrateDiffExitCode.SUCCESS) {
         throw new Error('No changes detected since the last migration.')
       }
 

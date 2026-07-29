@@ -64,8 +64,6 @@ describeMatrix(sqliteOnly, 'SQLite', () => {
   it('should fail if no changes since last migration', async () => {
     ctx.fixture('existing-db-1-migration')
     const result = MigrateCommit.new().parse([], await ctx.config(), ctx.configDir())
-    await expect(result).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"No changes detected since the last migration."`,
-    )
+    await expect(result).rejects.toThrowErrorMatchingInlineSnapshot(`"No changes detected since the last migration."`)
   })
 })
