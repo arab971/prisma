@@ -15,7 +15,6 @@ export type DataLoaderOptions<T> = {
 
 export class DataLoader<T = unknown> {
   batches: { [key: string]: Job[] }
-  private tickActive = false
   constructor(private options: DataLoaderOptions<T>) {
     this.batches = {}
   }
@@ -28,14 +27,16 @@ export class DataLoader<T = unknown> {
     if (!this.batches[hash]) {
       this.batches[hash] = []
 
-      // make sure, that we only tick once at a time
-      if (!this.tickActive) {
-        this.tickActive = true
-        process.nextTick(() => {
-          this.dispatchBatches()
-          this.tickActive = false
-        })
-      }
+      // Flush the batch at the next microtask checkpoint. Requests issued in
+      // the current synchronous turn join the same batch, while microtasks are
+      // bound to the request context that scheduled them: the batch is
+      // dispatched and its promises settle within the creating request's
+      // lifetime. A timer-based flush (e.g. `process.nextTick` on Cloudflare
+      // Workers) can fire after the creating request completed and settle its
+      // promises from a different request context, which workerd cancels with
+      // "A promise was resolved or rejected from a different request context"
+      // (see issue #28732).
+      queueMicrotask(() => this.dispatchBatches(hash))
     }
 
     return new Promise((resolve, reject) => {
@@ -47,52 +48,51 @@ export class DataLoader<T = unknown> {
     })
   }
 
-  private dispatchBatches() {
-    for (const key in this.batches) {
-      const batch = this.batches[key]
-      delete this.batches[key]
+  private dispatchBatches(hash: string) {
+    const batch = this.batches[hash]
+    if (!batch) return
+    delete this.batches[hash]
 
-      // only batch if necessary
-      // this might occur, if there's e.g. only 1 findUnique in the batch
-      if (batch.length === 1) {
-        this.options
-          .singleLoader(batch[0].request)
-          .then((result) => {
-            if (result instanceof Error) {
-              batch[0].reject(result)
-            } else {
-              batch[0].resolve(result)
-            }
-          })
-          .catch((e) => {
-            batch[0].reject(e)
-          })
-      } else {
-        batch.sort((a, b) => this.options.batchOrder(a.request, b.request))
-        this.options
-          .batchLoader(batch.map((j) => j.request))
-          .then((results) => {
-            if (results instanceof Error) {
-              for (let i = 0; i < batch.length; i++) {
-                batch[i].reject(results)
-              }
-            } else {
-              for (let i = 0; i < batch.length; i++) {
-                const value = results[i]
-                if (value instanceof Error) {
-                  batch[i].reject(value)
-                } else {
-                  batch[i].resolve(value)
-                }
-              }
-            }
-          })
-          .catch((e) => {
+    // only batch if necessary
+    // this might occur, if there's e.g. only 1 findUnique in the batch
+    if (batch.length === 1) {
+      this.options
+        .singleLoader(batch[0].request)
+        .then((result) => {
+          if (result instanceof Error) {
+            batch[0].reject(result)
+          } else {
+            batch[0].resolve(result)
+          }
+        })
+        .catch((e) => {
+          batch[0].reject(e)
+        })
+    } else {
+      batch.sort((a, b) => this.options.batchOrder(a.request, b.request))
+      this.options
+        .batchLoader(batch.map((j) => j.request))
+        .then((results) => {
+          if (results instanceof Error) {
             for (let i = 0; i < batch.length; i++) {
-              batch[i].reject(e)
+              batch[i].reject(results)
             }
-          })
-      }
+          } else {
+            for (let i = 0; i < batch.length; i++) {
+              const value = results[i]
+              if (value instanceof Error) {
+                batch[i].reject(value)
+              } else {
+                batch[i].resolve(value)
+              }
+            }
+          }
+        })
+        .catch((e) => {
+          for (let i = 0; i < batch.length; i++) {
+            batch[i].reject(e)
+          }
+        })
     }
   }
 
