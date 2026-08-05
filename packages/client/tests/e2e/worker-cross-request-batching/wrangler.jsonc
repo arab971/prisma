@@ -2,5 +2,8 @@
   "name": "worker-cross-request-batching",
   "main": "src/worker.ts",
   "compatibility_date": "2025-05-05",
+  // Required for workerd to support Node.js globals like process.nextTick
+  // which is used by DataLoader to prevent cross-request context issues
+  // See: https://github.com/prisma/prisma/issues/28732
   "compatibility_flags": ["nodejs_compat"],
 }
